@@ -36,7 +36,7 @@ For a full example, see the [checkout example](./examples/checkout/).
 Stores are basically stolen straight out of [Svelte][]. There are three kinds,
 which work basically like they do in Svelte, but with slightly more restricted
 syntax in the use of `derived`:
-* `readable(init, (set) => { /* ... */ }): { subscribe }
+* `readable(init, (set) => { /* ... */ }): { subscribe }`
 * `writable(init): { set, update, subscribe }`
 * `derived(stores, (values) => { /* ... */ }): { subscribe }`
 * `derived(stores, (values, set) => { /* ... */ }): { subscribe }`
