@@ -50,7 +50,6 @@ export function createSequence<Result, Props>(
         const { value, done } = sequence.next(previous);
         if (done) {
           return [components, value];
-          break;
         }
 
         const output = writable();
