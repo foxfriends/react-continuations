@@ -5,6 +5,7 @@ import {
   type FunctionComponent,
   type ReactElement,
   type JSXElementConstructor,
+  useEffect,
 } from "react";
 import { writable, readonly, type Readable } from "./store";
 
@@ -15,32 +16,40 @@ type StorePropsReactElement<
     | JSXElementConstructor<any>
 > = ReactElement<{ [K in keyof P]: P[K] | Readable<P[K]> }, C>;
 
-type SequenceProps<State> = {
+type SequenceElementProps<State> = {
   [key: string]: unknown;
   state: State;
   next: (state: State) => void;
   back: () => void;
 };
 
-export function createSequence<Props>(
+type SequenceProps<T> = {
+  onComplete: (value: T) => void;
+};
+
+export function createSequence<Result, Props>(
   sequencer: (
     props: Props
   ) => Generator<
-    StorePropsReactElement<SequenceProps<unknown>>,
-    void,
+    StorePropsReactElement<SequenceElementProps<unknown>>,
+    Readable<Result>,
     Readable<unknown> | undefined
   >
-): FunctionComponent<Props> {
-  function Sequenced(inputProps: Props) {
+): FunctionComponent<Props & SequenceProps<Result>> {
+  function Sequenced({
+    onComplete,
+    ...inputProps
+  }: Props & SequenceProps<Result>) {
     const [stepIndex, setStepIndex] = useState(0);
 
-    const components = useMemo(() => {
+    const [components, result] = useMemo(() => {
       let previous;
       const components = [];
-      const sequence = sequencer(inputProps);
+      const sequence = sequencer(inputProps as Props);
       for (let i = 0; ; i += 1) {
         const { value, done } = sequence.next(previous);
         if (done) {
+          return [components, value];
           break;
         }
 
@@ -48,14 +57,29 @@ export function createSequence<Props>(
         previous = readonly(output);
         const next = (value: unknown) => {
           output.set(value);
-          setStepIndex(i + 1);
+          if (i + 1 <= components.length) {
+            setStepIndex(i + 1);
+          }
         };
-        const back = () => setStepIndex(i - 1);
+        const back = () => {
+          if (i > 0) {
+            setStepIndex(i - 1);
+          }
+        };
 
         components.push(cloneElement(value, { next, back, state: output }));
       }
-      return components;
     }, []);
+
+    useEffect(() => {
+      let skipFirst = true;
+      return result.subscribe((value) => {
+        if (!skipFirst) {
+          onComplete?.(value);
+        }
+        skipFirst = false;
+      });
+    }, [result, onComplete]);
 
     return components[stepIndex];
   }
