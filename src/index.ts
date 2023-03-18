@@ -51,41 +51,30 @@ export function createSequence<Props>(
   >
 ): FunctionComponent<Props> {
   function Sequenced(inputProps: Props) {
-    const [originals, outputs] = useMemo(() => {
-      const originals = [];
-      const outputs = [];
+    const [stepIndex, setStepIndex] = useState(0);
+
+    const components = useMemo(() => {
+      let previous;
+      const components = [];
       const sequence = sequencer(inputProps);
-      for (;;) {
-        const { value, done } = sequence.next(
-          outputs.length ? readonly(outputs[outputs.length - 1]) : undefined
-        );
+      for (let i = 0; ; i += 1) {
+        const { value, done } = sequence.next(previous);
         if (done) {
           break;
         }
-        originals.push(value);
-        outputs.push(writable());
+
+        const output = writable();
+        previous = readonly(output);
+        const next = (value: unknown) => {
+          output.set(value);
+          setStepIndex(i + 1);
+        };
+        const back = () => setStepIndex(i - 1);
+
+        components.push(cloneElement(value, { next, back, state: output }));
       }
-      return [originals, outputs];
+      return components;
     }, []);
-
-    const [stepIndex, setStepIndex] = useState(0);
-
-    const components = useMemo(
-      () =>
-        originals.map((component, i) => {
-          const output = outputs[i];
-
-          const next = (value: unknown) => {
-            output.set(value);
-            setStepIndex(i + 1);
-          };
-
-          const back = () => setStepIndex(i - 1);
-
-          return cloneElement(component, { next, back, state: output });
-        }),
-      [originals, outputs]
-    );
 
     return components[stepIndex];
   }
