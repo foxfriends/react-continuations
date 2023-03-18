@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { createSequence } from "../react-continuations";
+import { lift, createSequence } from "../react-continuations";
 
-function Catalog({ state = {}, next }) {
+const Catalog = lift(function Catalog({ state = {}, next }) {
   const [cart, setCart] = useState(state);
 
   return (
@@ -42,9 +42,9 @@ function Catalog({ state = {}, next }) {
       <button onClick={() => next(cart)}>Continue</button>
     </div>
   );
-}
+});
 
-function ShippingForm({ state = "", next, back }) {
+const ShippingForm = lift(function ShippingForm({ state = "", next, back }) {
   const [address, setAddress] = useState(state);
 
   return (
@@ -59,9 +59,9 @@ function ShippingForm({ state = "", next, back }) {
       <button onClick={() => next(address)}>Continue</button>
     </div>
   );
-}
+});
 
-function BillingForm({ state = "", next, back }) {
+const BillingForm = lift(function BillingForm({ state = "", next, back }) {
   const [billing, setBilling] = useState(state);
 
   return (
@@ -76,9 +76,14 @@ function BillingForm({ state = "", next, back }) {
       <button onClick={() => next(billing)}>Continue</button>
     </div>
   );
-}
+});
 
-function ConfirmationPage({ address, billing, cart, back }) {
+const ConfirmationPage = lift(function ConfirmationPage({
+  address,
+  billing,
+  cart,
+  back,
+}) {
   return (
     <div className="flex flex-col gap-1">
       <div>Buying: {JSON.stringify(cart)}</div>
@@ -87,7 +92,7 @@ function ConfirmationPage({ address, billing, cart, back }) {
       <button onClick={() => back()}>Back</button>
     </div>
   );
-}
+});
 
 export const Checkout = createSequence(function* Checkout() {
   const cart = yield <Catalog />;
